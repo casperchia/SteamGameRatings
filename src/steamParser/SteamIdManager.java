@@ -12,15 +12,7 @@ import com.google.gson.Gson;
  */
 public class SteamIdManager {
 	
-	private static String steamKey = "5BFDD3211928F0C392EFBC80FA343E69";
 
-	private static class Page {
-		Response response;
-	}
-	
-	private static class Response {
-		String steamid;
-	}
 	
 	/**
 	 * @param urlString 
@@ -52,9 +44,9 @@ public class SteamIdManager {
 	 * @throws Exception
 	 */
 	public static String getSteamId(String username) throws Exception{
-		String json = readUrl("http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=" + steamKey + "&vanityurl=" + username);
+		String json = readUrl("http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=" + Constants.STEAM_KEY + "&vanityurl=" + username);
 		Gson gson = new Gson();
-		Page page = gson.fromJson(json, Page.class);
+		Constants.Page page = gson.fromJson(json, Constants.Page.class);
 		return page.response.steamid;
 	}	
 	
