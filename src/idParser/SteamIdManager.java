@@ -8,7 +8,7 @@ import com.google.gson.Gson;
 
 /**
  * @author Casper
- * Used for getting 64-bit steamid from Steam user's VanityUrl. 
+ *
  */
 public class SteamIdManager {
 	
@@ -27,7 +27,7 @@ public class SteamIdManager {
 	 * @return Source html of website in string
 	 * @throws Exception
 	 */
-	private static String readUrl(String urlString) throws Exception {
+	public static String readUrl(String urlString) throws Exception {
 	    BufferedReader reader = null;
 	    try {
 	        URL url = new URL(urlString);
@@ -46,8 +46,9 @@ public class SteamIdManager {
 	}
 	
 	/**
+	 * Gets steam ID of user from given VanityUrl.
 	 * @param username VanityUrl of user
-	 * @return steam ID
+	 * @return Steam ID. Null if no such user found.
 	 * @throws Exception
 	 */
 	public static String getSteamId(String username) throws Exception{
