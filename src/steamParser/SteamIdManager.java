@@ -14,11 +14,11 @@ public class SteamIdManager {
 	
 	private static String steamKey = "5BFDD3211928F0C392EFBC80FA343E69";
 
-	static class Page {
+	private static class Page {
 		Response response;
 	}
 	
-	static class Response {
+	private static class Response {
 		String steamid;
 	}
 	
