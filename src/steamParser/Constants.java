@@ -1,5 +1,7 @@
 package steamParser;
 
+import java.util.ArrayList;
+
 public class Constants {
 	public static final String STEAM_KEY = "5BFDD3211928F0C392EFBC80FA343E69";
 
@@ -9,11 +11,11 @@ public class Constants {
 	
 	static class Response {
 		String steamid;
-		Games games;
+		ArrayList<Game> games;
 		int game_count;
 	}
 	
-	static class Games {
+	static class Game {
 		String appid;
 		int playtime_forever;
 	}
