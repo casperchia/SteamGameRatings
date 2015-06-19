@@ -6,6 +6,10 @@ import java.net.URL;
 
 import com.google.gson.Gson;
 
+/**
+ * @author Casper
+ * Used for getting 64-bit steamid from Steam user's VanityUrl. 
+ */
 public class SteamIdManager {
 	
 	private static String steamKey = "5BFDD3211928F0C392EFBC80FA343E69";
@@ -18,6 +22,11 @@ public class SteamIdManager {
 		String steamid;
 	}
 	
+	/**
+	 * @param urlString 
+	 * @return Source html of website in string
+	 * @throws Exception
+	 */
 	private static String readUrl(String urlString) throws Exception {
 	    BufferedReader reader = null;
 	    try {
@@ -36,6 +45,11 @@ public class SteamIdManager {
 	    }
 	}
 	
+	/**
+	 * @param username VanityUrl of user
+	 * @return steam ID
+	 * @throws Exception
+	 */
 	public static String getSteamId(String username) throws Exception{
 		String json = readUrl("http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=" + steamKey + "&vanityurl=" + username);
 		Gson gson = new Gson();
