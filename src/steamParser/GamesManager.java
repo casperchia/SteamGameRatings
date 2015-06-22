@@ -1,12 +1,16 @@
 package steamParser;
 
-import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.jsoup.Connection;
+import org.jsoup.Connection.Response;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import steamParser.Constants.Game;
 
@@ -25,7 +29,7 @@ public class GamesManager {
 		Constants.Page page = gson.fromJson(json, Constants.Page.class);
 		
 		
-		Connection con = null;
+		java.sql.Connection con = null;
 		Statement st = null;
 		ResultSet rs = null;
 		
@@ -57,48 +61,45 @@ public class GamesManager {
             }
 
 		}
-		
-		Pattern reviewPattern = Pattern.compile("user_reviews_count\">\\((.*)\\)</span>");
-//		Pattern namePattern = Pattern.compile("apphub_AppName\">(.*)</div>");
-		Pattern namePattern = Pattern.compile("apphub_AppName.*?>(.*)</div>");
-		
+		int i = 1;	
 		for (Game game : page.response.games) {
 			System.out.println("appid: "+ game.appid);
-			
-//			System.out.println(SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid));			
-			String html = SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid);
-			Matcher reviewMatcher = reviewPattern.matcher(html);
-			Matcher nameMatcher = namePattern.matcher(html);
-			
-			if (nameMatcher.find()) {
-				System.out.println(nameMatcher.group(0));
-				System.out.println(nameMatcher.group(1));
-			} else {
-				System.out.println("@@@@@@@@@@@@@@@@@@@@@@@ NO NAME @@@@@@@@@@@@@@@@@@@");
-			}
-			if (reviewMatcher.find()) {
-				System.out.println("Positive: " + reviewMatcher.group(1));
+//			String html = SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid);
 
-				if (reviewMatcher.find()) {
-					System.out.println("Negative: " + reviewMatcher.group(1));
-				}
-			} else {
-				System.out.println("@@@@@@@@@@@@@@@@@@@@@@@ NO RATING @@@@@@@@@@@@@@@@@@@");
-
+			/*
+			Document doc = Jsoup.parse(html);
+//			Document doc = Jsoup.connect(Constants.STEAM_APP_URL + game.appid).get();
+			Elements test = doc.getElementsByClass("apphub_AppName");
+			System.out.println(test.toString());
+			*/	
+			
+//			Connection.Response loginForm = Jsoup.connect(Constants.STEAM_APP_URL + "50130").method(Connection.Method.GET).execute();
+			// Auto fill age form with timeout of 10 seconds.
+			Document doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + game.appid)
+		            .data("ageYear", "1990")
+		            .data("ageMonth", "January")
+		            .data("ageDay", "1")
+		            .timeout(10*1000)
+		            .post();
+//		           System.out.println(document);
+			Elements name = doc.getElementsByClass("apphub_AppName");
+			Element positive = doc.getElementById("ReviewsTab_positive");
+			Element negative = doc.getElementById("ReviewsTab_negative");
+			
+			if (name.size() > 0) {
+//				System.out.println("name = " + name.toString());
+				System.out.println(i + ")");
+				i++;
+				System.out.println(name.text());
+				System.out.println(positive.getElementsByClass("user_reviews_count").text());
+				System.out.println(negative.getElementsByClass("user_reviews_count").text());
+//				System.out.println(positive.toString());
+//				System.out.println(negative.toString());				
 			}
 			
-			System.out.println("--------------------------------");
-//			System.out.println("Playtime: "+ game.playtime_forever);
+			System.out.println("---------------------------------------");
+
 		}
 	}
 	
-	
-	
 }
-//*[@id="ReviewsTab_positive"]/a/span[2]
-
-//*[@id="ReviewsTab_negative"]/a/span[2]
-
-// <span class="user_reviews_count">(2,232)</span>
-
-//<div class="apphub_AppName">Magicka 2</div>

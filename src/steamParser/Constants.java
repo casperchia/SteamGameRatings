@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class Constants {
 	public static final String STEAM_KEY = "5BFDD3211928F0C392EFBC80FA343E69";
-	public static final String STEAM_APP_URL = "http://steamdb.info/app/";
+	public static final String STEAM_APP_URL = "http://http://store.steampowered.com/app/";
 
 	static class Page {
 		Response response;
