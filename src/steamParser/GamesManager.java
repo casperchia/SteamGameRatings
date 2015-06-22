@@ -63,7 +63,6 @@ public class GamesManager {
 		}
 		int i = 1;	
 		for (Game game : page.response.games) {
-			System.out.println("appid: "+ game.appid);
 //			String html = SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid);
 
 			/*
@@ -74,6 +73,7 @@ public class GamesManager {
 			*/	
 			
 //			Connection.Response loginForm = Jsoup.connect(Constants.STEAM_APP_URL + "50130").method(Connection.Method.GET).execute();
+			
 			// Auto fill age form with timeout of 10 seconds.
 			Document doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + game.appid)
 		            .data("ageYear", "1990")
@@ -81,20 +81,38 @@ public class GamesManager {
 		            .data("ageDay", "1")
 		            .timeout(10*1000)
 		            .post();
-//		           System.out.println(document);
-			Elements name = doc.getElementsByClass("apphub_AppName");
-			Element positive = doc.getElementById("ReviewsTab_positive");
-			Element negative = doc.getElementById("ReviewsTab_negative");
+//			System.out.println(document);
+			Elements nameEle = doc.getElementsByClass("apphub_AppName");
+			Element positiveEle = doc.getElementById("ReviewsTab_positive");
+			Element negativeEle = doc.getElementById("ReviewsTab_negative");
 			
-			if (name.size() > 0) {
-//				System.out.println("name = " + name.toString());
-				System.out.println(i + ")");
-				i++;
-				System.out.println(name.text());
-				System.out.println(positive.getElementsByClass("user_reviews_count").text());
-				System.out.println(negative.getElementsByClass("user_reviews_count").text());
-//				System.out.println(positive.toString());
-//				System.out.println(negative.toString());				
+			if (nameEle.size() > 0) {
+				System.out.println(i++ + ")");
+				System.out.println("appid: "+ game.appid);
+				String name = nameEle.text();
+				int positive;
+				int negative;
+				
+				String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
+						.replace("(", "")
+						.replace(")", "")
+						.replace(",", "");
+				
+				String negativeStr = negativeEle.getElementsByClass("user_reviews_count").text()
+						.replace("(", "")
+						.replace(")", "")
+						.replace(",", "");
+				
+				positive = Integer.parseInt(positiveStr);
+				negative = Integer.parseInt(negativeStr);
+				
+				System.out.println(nameEle.text());
+				System.out.println(positive);
+				System.out.println(negative);
+			
+			} else {
+				System.out.println("appid: "+ game.appid);
+				System.out.println("No info found.");
 			}
 			
 			System.out.println("---------------------------------------");
