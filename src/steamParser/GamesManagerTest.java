@@ -6,7 +6,14 @@ public class GamesManagerTest {
 
 	@Test
 	public void testPrintGames() throws Exception {
-		GamesManager.printGames("76561198024048520");
+		// mozface id
+//		GamesManager.printGames("76561198024048520");
+		
+		// eunicell id
+		GamesManager.printGames("76561198061965614");
+		
+		// valkyriebiscuit		
+//		GamesManager.printGames((SteamIdManager.getSteamId("ValkyrieBiscuit")));
 	}
  
 }
