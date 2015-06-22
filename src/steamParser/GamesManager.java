@@ -58,26 +58,37 @@ public class GamesManager {
 
 		}
 		
+		Pattern reviewPattern = Pattern.compile("user_reviews_count\">\\((.*)\\)</span>");
+//		Pattern namePattern = Pattern.compile("apphub_AppName\">(.*)</div>");
+		Pattern namePattern = Pattern.compile("apphub_AppName.*?>(.*)</div>");
 		
 		for (Game game : page.response.games) {
 			System.out.println("appid: "+ game.appid);
 			
 //			System.out.println(SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid));			
 			String html = SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid);
-			Pattern pattern = Pattern.compile("user_reviews_count\">\\((.*)\\)</span>");
-			Matcher matcher = pattern.matcher(html);
+			Matcher reviewMatcher = reviewPattern.matcher(html);
+			Matcher nameMatcher = namePattern.matcher(html);
 			
-			
-			if(matcher.find()){
-				System.out.println("Positive: " + matcher.group(1));
+			if (nameMatcher.find()) {
+				System.out.println(nameMatcher.group(0));
+				System.out.println(nameMatcher.group(1));
+			} else {
+				System.out.println("@@@@@@@@@@@@@@@@@@@@@@@ NO NAME @@@@@@@@@@@@@@@@@@@");
+			}
+			if (reviewMatcher.find()) {
+				System.out.println("Positive: " + reviewMatcher.group(1));
 
-				if(matcher.find()){
-					System.out.println("Negative: " + matcher.group(1));
+				if (reviewMatcher.find()) {
+					System.out.println("Negative: " + reviewMatcher.group(1));
 				}
+			} else {
+				System.out.println("@@@@@@@@@@@@@@@@@@@@@@@ NO RATING @@@@@@@@@@@@@@@@@@@");
+
 			}
 			
-
-			System.out.println("Playtime: "+ game.playtime_forever);
+			System.out.println("--------------------------------");
+//			System.out.println("Playtime: "+ game.playtime_forever);
 		}
 	}
 	
@@ -89,3 +100,5 @@ public class GamesManager {
 //*[@id="ReviewsTab_negative"]/a/span[2]
 
 // <span class="user_reviews_count">(2,232)</span>
+
+//<div class="apphub_AppName">Magicka 2</div>
