@@ -1,12 +1,10 @@
 package steamParser;
 
 import java.sql.DriverManager;
-import java.sql.ResultSet;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.jsoup.Connection;
-import org.jsoup.Connection.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -30,8 +28,9 @@ public class GamesManager {
 		
 		
 		java.sql.Connection con = null;
-		Statement st = null;
-		ResultSet rs = null;
+		PreparedStatement pst = null;
+//		Statement st = null;
+//		ResultSet rs = null;
 		
 		String url = "jdbc:postgresql://localhost/steamdb";
 		String user = "casper";
@@ -39,85 +38,101 @@ public class GamesManager {
 		
 		try {
 			con = DriverManager.getConnection(url, user, password);
-			st = con.createStatement();
-			rs = st.executeQuery("SELECT * from games");
 			
-			if (rs.next()) {
-				System.out.println(rs.getString(1));
+//			st = con.createStatement();
+//			rs = st.executeQuery("SELECT * from games");
+//			
+//			if (rs.next()) {
+//				System.out.println(rs.getString(1));
+//			}
+			String sql = "INSERT INTO games (appid, name, positive, negative) VALUES (?, ?, ?, ?)";
+			pst = con.prepareStatement(sql);
+			
+			
+			int i = 1;	
+			for (Game game : page.response.games) {
+				String html = SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid);
+				Document doc = Jsoup.parse(html);
+				Elements nameEle = doc.getElementsByClass("apphub_AppName");
+				
+				// If name cannot be found, it means there is no app with that appid anymore, or the webpage requires age input.
+				if (!(nameEle.size() > 0)) {
+					// Auto fill age form with timeout of 10 seconds.
+					doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + game.appid)
+				            .data("ageYear", "1990")
+				            .data("ageMonth", "January")
+				            .data("ageDay", "1")
+				            .timeout(10*1000)
+				            .post();
+				}
+								
+				nameEle = doc.getElementsByClass("apphub_AppName");
+				Element positiveEle = doc.getElementById("ReviewsTab_positive");
+				Element negativeEle = doc.getElementById("ReviewsTab_negative");
+				
+				if (nameEle.size() > 0) {
+					System.out.println(i++ + ")");
+					System.out.println("appid: "+ game.appid);
+					String name = nameEle.text();
+					int positive;
+					int negative;
+					
+					String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
+							.replace("(", "")
+							.replace(")", "")
+							.replace(",", "");
+					
+					String negativeStr = negativeEle.getElementsByClass("user_reviews_count").text()
+							.replace("(", "")
+							.replace(")", "")
+							.replace(",", "");
+					
+					positive = Integer.parseInt(positiveStr);
+					negative = Integer.parseInt(negativeStr);
+					
+					System.out.println(name);
+					System.out.println(positive);
+					System.out.println(negative);
+					
+					pst.setInt(1, Integer.parseInt(game.appid));
+					pst.setString(2, name);
+					pst.setInt(3, positive);
+					pst.setInt(4, negative);
+					
+					pst.executeUpdate();
+				
+				} else {
+					System.out.println("appid: "+ game.appid);
+					System.out.println("No info found.");
+				}
+				
+				System.out.println("---------------------------------------");
+
 			}
+			
+			
+			
 		} catch (SQLException e) {
 			System.out.println("Connection Failed! Check output console");
 			e.printStackTrace();
 			return;		
 		} finally {
-			if (rs != null) {
-                rs.close();
-            }
-            if (st != null) {
-                st.close();
-            }
+//			if (rs != null) {
+//                rs.close();
+//            }
+//            if (st != null) {
+//                st.close();
+//            }
+			if (pst != null) {
+				pst.close();
+			}
             if (con != null) {
                 con.close();
             }
 
 		}
-		int i = 1;	
-		for (Game game : page.response.games) {
-//			String html = SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid);
+		
 
-			/*
-			Document doc = Jsoup.parse(html);
-//			Document doc = Jsoup.connect(Constants.STEAM_APP_URL + game.appid).get();
-			Elements test = doc.getElementsByClass("apphub_AppName");
-			System.out.println(test.toString());
-			*/	
-			
-//			Connection.Response loginForm = Jsoup.connect(Constants.STEAM_APP_URL + "50130").method(Connection.Method.GET).execute();
-			
-			// Auto fill age form with timeout of 10 seconds.
-			Document doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + game.appid)
-		            .data("ageYear", "1990")
-		            .data("ageMonth", "January")
-		            .data("ageDay", "1")
-		            .timeout(10*1000)
-		            .post();
-//			System.out.println(document);
-			Elements nameEle = doc.getElementsByClass("apphub_AppName");
-			Element positiveEle = doc.getElementById("ReviewsTab_positive");
-			Element negativeEle = doc.getElementById("ReviewsTab_negative");
-			
-			if (nameEle.size() > 0) {
-				System.out.println(i++ + ")");
-				System.out.println("appid: "+ game.appid);
-				String name = nameEle.text();
-				int positive;
-				int negative;
-				
-				String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
-						.replace("(", "")
-						.replace(")", "")
-						.replace(",", "");
-				
-				String negativeStr = negativeEle.getElementsByClass("user_reviews_count").text()
-						.replace("(", "")
-						.replace(")", "")
-						.replace(",", "");
-				
-				positive = Integer.parseInt(positiveStr);
-				negative = Integer.parseInt(negativeStr);
-				
-				System.out.println(nameEle.text());
-				System.out.println(positive);
-				System.out.println(negative);
-			
-			} else {
-				System.out.println("appid: "+ game.appid);
-				System.out.println("No info found.");
-			}
-			
-			System.out.println("---------------------------------------");
-
-		}
 	}
 	
 }
