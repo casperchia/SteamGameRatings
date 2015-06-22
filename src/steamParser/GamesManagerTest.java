@@ -8,5 +8,5 @@ public class GamesManagerTest {
 	public void testPrintGames() throws Exception {
 		GamesManager.printGames("76561198024048520");
 	}
-
+ 
 }
