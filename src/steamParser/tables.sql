@@ -4,5 +4,7 @@ CREATE TABLE IF NOT EXISTS games (
 	appid INT PRIMARY KEY,
 	name TEXT NOT NULL,
 	positive INT,
-	negative INT
+	negative INT,
+--	4 digits with 2 decimal points
+	rating NUMERIC(4, 2)
 );
