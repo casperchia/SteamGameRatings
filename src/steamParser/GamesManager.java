@@ -29,8 +29,6 @@ public class GamesManager {
 		
 		java.sql.Connection con = null;
 		PreparedStatement pst = null;
-//		Statement st = null;
-//		ResultSet rs = null;
 		
 		String url = "jdbc:postgresql://localhost/steamdb";
 		String user = "casper";
@@ -38,14 +36,12 @@ public class GamesManager {
 		
 		try {
 			con = DriverManager.getConnection(url, user, password);
+			con.setAutoCommit(false);
 			
-//			st = con.createStatement();
-//			rs = st.executeQuery("SELECT * from games");
-//			
-//			if (rs.next()) {
-//				System.out.println(rs.getString(1));
-//			}
-			String sql = "INSERT INTO games (appid, name, positive, negative) VALUES (?, ?, ?, ?)";
+			String sql = "UPDATE games SET name=?, positive=?, negative=? WHERE appid=?;"
+					+ "INSERT INTO games (appid, name, positive, negative)"
+					+ "SELECT ?, ?, ?, ?"
+					+ "WHERE NOT EXISTS (SELECT 1 FROM games WHERE appid=?)";
 			pst = con.prepareStatement(sql);
 			
 			
@@ -71,11 +67,13 @@ public class GamesManager {
 				Element negativeEle = doc.getElementById("ReviewsTab_negative");
 				
 				if (nameEle.size() > 0) {
-					System.out.println(i++ + ")");
-					System.out.println("appid: "+ game.appid);
+					int appid = Integer.parseInt(game.appid);
 					String name = nameEle.text();
 					int positive;
 					int negative;
+
+					System.out.println(i++ + ")");
+					System.out.println("appid: "+ appid);
 					
 					String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
 							.replace("(", "")
@@ -94,13 +92,22 @@ public class GamesManager {
 					System.out.println(positive);
 					System.out.println(negative);
 					
-					pst.setInt(1, Integer.parseInt(game.appid));
-					pst.setString(2, name);
-					pst.setInt(3, positive);
-					pst.setInt(4, negative);
+					pst.setString(1, name);
+					pst.setInt(2, positive);
+					pst.setInt(3, negative);
+					pst.setInt(4, appid);
 					
+					pst.setInt(5, appid);
+					pst.setString(6, name);
+					pst.setInt(7, positive);
+					pst.setInt(8, negative);
+					
+					pst.setInt(9, appid);
+
 					pst.executeUpdate();
-				
+					
+					con.commit();
+					
 				} else {
 					System.out.println("appid: "+ game.appid);
 					System.out.println("No info found.");
@@ -113,16 +120,12 @@ public class GamesManager {
 			
 			
 		} catch (SQLException e) {
+			con.rollback();
 			System.out.println("Connection Failed! Check output console");
 			e.printStackTrace();
 			return;		
 		} finally {
-//			if (rs != null) {
-//                rs.close();
-//            }
-//            if (st != null) {
-//                st.close();
-//            }
+
 			if (pst != null) {
 				pst.close();
 			}
