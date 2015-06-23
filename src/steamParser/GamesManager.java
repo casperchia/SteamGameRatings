@@ -1,9 +1,9 @@
 package steamParser;
 
+import java.math.BigDecimal;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -38,9 +38,9 @@ public class GamesManager {
 			con = DriverManager.getConnection(url, user, password);
 			con.setAutoCommit(false);
 			
-			String sql = "UPDATE games SET name=?, positive=?, negative=? WHERE appid=?;"
-					+ "INSERT INTO games (appid, name, positive, negative)"
-					+ "SELECT ?, ?, ?, ?"
+			String sql = "UPDATE games SET name=?, positive=?, negative=?, rating=? WHERE appid=?;"
+					+ "INSERT INTO games (appid, name, positive, negative, rating)"
+					+ "SELECT ?, ?, ?, ?, ?"
 					+ "WHERE NOT EXISTS (SELECT 1 FROM games WHERE appid=?)";
 			pst = con.prepareStatement(sql);
 			
@@ -71,6 +71,7 @@ public class GamesManager {
 					String name = nameEle.text();
 					int positive;
 					int negative;
+					BigDecimal rating;
 
 					System.out.println(i++ + ")");
 					System.out.println("appid: "+ appid);
@@ -87,22 +88,26 @@ public class GamesManager {
 					
 					positive = Integer.parseInt(positiveStr);
 					negative = Integer.parseInt(negativeStr);
+					rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
 					
 					System.out.println(name);
-					System.out.println(positive);
-					System.out.println(negative);
+					System.out.println("+ " + positive);
+					System.out.println("- " + negative);
+					System.out.println(rating + "%");
 					
 					pst.setString(1, name);
 					pst.setInt(2, positive);
 					pst.setInt(3, negative);
-					pst.setInt(4, appid);
-					
+					pst.setBigDecimal(4, rating);
 					pst.setInt(5, appid);
-					pst.setString(6, name);
-					pst.setInt(7, positive);
-					pst.setInt(8, negative);
 					
-					pst.setInt(9, appid);
+					pst.setInt(6, appid);
+					pst.setString(7, name);
+					pst.setInt(8, positive);
+					pst.setInt(9, negative);
+					pst.setBigDecimal(10, rating);
+					
+					pst.setInt(11, appid);
 
 					pst.executeUpdate();
 					
@@ -124,6 +129,7 @@ public class GamesManager {
 			System.out.println("Connection Failed! Check output console");
 			e.printStackTrace();
 			return;		
+			
 		} finally {
 
 			if (pst != null) {
