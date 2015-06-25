@@ -32,51 +32,55 @@ public class GamesManager {
 	
 	public static class MyRunnable implements Runnable {
 		
-		private Lock lock;
-		private Game game;
+//		private Lock lock;
 		private java.sql.Connection con;
 		private PreparedStatement pst;
-		
-		MyRunnable(Game game,java.sql.Connection con, PreparedStatement pst) {
-			this.game = game;
+		private int appid;
+
+		MyRunnable(int appid,java.sql.Connection con, PreparedStatement pst) {
 			this.con = con;
 			this.pst = pst;
-			this.lock = new ReentrantLock();
+//			this.lock = new ReentrantLock();
+			this.appid = appid;
 		}
 		
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
-//			String html = null;
-//			try {
-//				html = SteamIdManager.readUrl(Constants.STEAM_APP_URL + game.appid);
-//			} catch (Exception e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//			Document doc = Jsoup.parse(html);
 			Document doc = null;
 			try {
-				doc = Jsoup.connect(Constants.STEAM_APP_URL + game.appid).timeout(20*1000).get();
+				doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(20*1000).get();
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
+				System.out.println("Error connecting to appid: " + appid);
 				e1.printStackTrace();
+				
+				// try again
+				try {
+					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(20*1000).get();
+				} catch (IOException e) {
+					System.out.println("Error connecting to appid: " + appid);
+					e.printStackTrace();
+				}
+
 			}
 			
-			Elements nameEle = doc.getElementsByClass("apphub_AppName");
+			Elements nameEle = new Elements();
+			if (doc != null) {
+				nameEle = doc.getElementsByClass("apphub_AppName");
+			}
 			
 			// If name cannot be found, it means there is no app with that appid anymore, or the webpage requires age input.
 			if (!(nameEle.size() > 0)) {
+				
 				// Auto fill age form with timeout of 10 seconds.
 				try {
-					doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + game.appid)
+					doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + appid)
 					        .data("ageYear", "1990")
 					        .data("ageMonth", "January")
 					        .data("ageDay", "1")
 					        .timeout(20*1000)
 					        .post();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
+					System.out.println("Error connecting to appid: " + appid);
 					e.printStackTrace();
 				}
 			}
@@ -84,21 +88,15 @@ public class GamesManager {
 			nameEle = doc.getElementsByClass("apphub_AppName");
 			Element positiveEle = doc.getElementById("ReviewsTab_positive");
 			Element negativeEle = doc.getElementById("ReviewsTab_negative");
-//			lock.lock();
+			
 			if (nameEle.size() > 0) {
-				int appid = Integer.parseInt(game.appid);
 				String name = nameEle.text();
 				int positive;
 				int negative;
 				BigDecimal rating;
 				
-//				lock.lock();
-				System.out.println(i++ + ")");
-//				System.out.println(i + ")");
-//				i++;
-//				lock.unlock();
-
-				System.out.println("appid: "+ appid);
+//				System.out.println(i++ + ")");
+//				System.out.println("appid: "+ appid);
 				
 				String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
 						.replace("(", "")
@@ -114,10 +112,10 @@ public class GamesManager {
 				negative = Integer.parseInt(negativeStr);
 				rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
 				
-				System.out.println(name);
-				System.out.println("+ " + positive);
-				System.out.println("- " + negative);
-				System.out.println(rating + "%");
+//				System.out.println(name);
+//				System.out.println("+ " + positive);
+//				System.out.println("- " + negative);
+//				System.out.println(rating + "%");
 				
 				try {
 					pst.setString(1, name);
@@ -138,18 +136,22 @@ public class GamesManager {
 					
 					con.commit();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
+					System.out.println("Error with appid: " + appid);
 					e.printStackTrace();
+					try {
+						con.rollback();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
 				}
 
 				
 			} else {
-				System.out.println("appid: "+ game.appid);
-				System.out.println("No info found.");
+//				System.out.println("appid: "+ game.appid);
+//				System.out.println("No info found.");
 			}
 			
-			System.out.println("---------------------------------------");
-//			lock.unlock();
+//			System.out.println("---------------------------------------");
 		}
 		
 	}
@@ -186,9 +188,10 @@ public class GamesManager {
 			
 //			int i = 1;	
 			i = 1;
+			System.out.println("Starting threads...");
 			long startTime = System.currentTimeMillis();
 			for (Game game : page.response.games) {
-				Runnable worker = new MyRunnable(game, con, pst);
+				Runnable worker = new MyRunnable(Integer.parseInt(game.appid), con, pst);
 				executor.execute(worker);
 
 			}
@@ -196,13 +199,14 @@ public class GamesManager {
 			while (!executor.isTerminated()) {
 				
 			}
-			System.out.println("Finished all threads");
 			long finishTime = System.currentTimeMillis();
+			System.out.println("Finished all threads");
 			System.out.println("That took: " + (finishTime - startTime) + " ms.");
+			System.out.println("-----------------------");
 			
 		} catch (SQLException e) {
-			con.rollback();
 			System.out.println("Connection Failed! Check output console");
+			con.rollback();
 			e.printStackTrace();
 			return;		
 			
