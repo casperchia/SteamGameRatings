@@ -26,7 +26,7 @@ import com.google.gson.Gson;
  */
 public class GamesManager {
 	
-	private static final int NUM_OF_THREADS = 8;
+	private static final int NUM_OF_THREADS = 16;
 	public static int i;
 	
 	
@@ -47,131 +47,134 @@ public class GamesManager {
 		@Override
 		public void run() {
 			Document doc = null;
-			try {
-				doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(20*1000).get();
-			} catch (IOException e1) {
-				System.out.println("Error connecting to appid: " + appid);
-				e1.printStackTrace();
-				
-				// try again
-//				try {
-//					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(20*1000).get();
-//				} catch (IOException e) {
-//					System.out.println("Error connecting to appid: " + appid);
-//					e.printStackTrace();
-//				}
-
+			int retryCount = 0;
+			while (doc == null && retryCount < 3) {
+				if (retryCount > 0) {
+					System.out.println("Trying to reconnect " + "(" + retryCount + ")" + "to appid: " + appid);
+				}
+				try {
+					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(10*1000).get();
+				} catch (IOException e1) {
+					System.out.println("Error connecting to appid: " + appid);
+					e1.printStackTrace();
+				}
+				retryCount++;
+			}
+			
+			if (retryCount == 3){
+				System.out.println("Unable to connect to appid: " + appid);
 			}
 			
 			Elements nameEle = new Elements();
 			if (doc != null) {
+				
 				nameEle = doc.getElementsByClass("apphub_AppName");
-			}
-			
-			// If name cannot be found, it means there is no app with that appid anymore, or the webpage requires age input.
-			if (!(nameEle.size() > 0)) {
-				//At this point, doc may still be null
 				
-				if(doc.getElementsByClass("agecheck").size() > 0){
+				// If name cannot be found, it means there is no app with that appid anymore, or the webpage requires age input.
+				if (!(nameEle.size() > 0)) {
 					
-					// Auto fill age form with timeout of 10 seconds.
+					if(doc.getElementsByClass("agecheck").size() > 0){
+						
+						// Auto fill age form with timeout of 10 seconds.
+						try {
+							doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + appid)
+							        .data("ageYear", "1990")
+							        .data("ageMonth", "January")
+							        .data("ageDay", "1")
+							        .timeout(10*1000)
+							        .post();
+						} catch (IOException e) {
+							System.out.println("Error connecting to appid: " + appid);
+							e.printStackTrace();
+						}
+					} else {
+						// Do nothing
+					}
+
+				}
+								
+				nameEle = doc.getElementsByClass("apphub_AppName");
+				
+				if (nameEle.size() > 0) {
+					String name = nameEle.text();
+					int positive;
+					int negative;
+					BigDecimal rating;
+					
+					System.out.println(i++ + ")");
+					System.out.println("appid: "+ appid);
+					
+					Element positiveEle = doc.getElementById("ReviewsTab_positive");
+					Element negativeEle = doc.getElementById("ReviewsTab_negative");
+					
+					if (positiveEle == null) {
+						positive = 0;
+					} else {
+						String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
+								.replace("(", "")
+								.replace(")", "")
+								.replace(",", "");
+						
+						positive = Integer.parseInt(positiveStr);
+
+					}
+					
+					if (negativeEle == null) {
+						negative = 0;
+					} else {
+						String negativeStr = negativeEle.getElementsByClass("user_reviews_count").text()
+								.replace("(", "")
+								.replace(")", "")
+								.replace(",", "");
+						
+						negative = Integer.parseInt(negativeStr);
+					}
+
+					if (positive == 0 && negative == 0) {
+						rating = BigDecimal.valueOf(0);
+					} else {
+						rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
+					}
+					System.out.println(name);
+//					System.out.println("+ " + positive);
+//					System.out.println("- " + negative);
+//					System.out.println(rating + "%");
+					
 					try {
-						doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + appid)
-						        .data("ageYear", "1990")
-						        .data("ageMonth", "January")
-						        .data("ageDay", "1")
-						        .timeout(20*1000)
-						        .post();
-					} catch (IOException e) {
-						System.out.println("Error connecting to appid: " + appid);
+						pst.setString(1, name);
+						pst.setInt(2, positive);
+						pst.setInt(3, negative);
+						pst.setBigDecimal(4, rating);
+						pst.setInt(5, appid);
+						
+						pst.setInt(6, appid);
+						pst.setString(7, name);
+						pst.setInt(8, positive);
+						pst.setInt(9, negative);
+						pst.setBigDecimal(10, rating);
+						
+						pst.setInt(11, appid);
+
+						pst.executeUpdate();
+						
+						con.commit();
+					} catch (SQLException e) {
+						System.out.println("Error with appid: " + appid);
 						e.printStackTrace();
+						try {
+							con.rollback();
+						} catch (SQLException e1) {
+							e1.printStackTrace();
+						}
 					}
+
+					
 				} else {
-					// Do nothing
+//					System.out.println("appid: "+ game.appid);
+//					System.out.println("No info found.");
 				}
 
-			}
-							
-			nameEle = doc.getElementsByClass("apphub_AppName");
-			
-			if (nameEle.size() > 0) {
-				String name = nameEle.text();
-				int positive;
-				int negative;
-				BigDecimal rating;
-				
-				System.out.println(i++ + ")");
-				System.out.println("appid: "+ appid);
-				
-				Element positiveEle = doc.getElementById("ReviewsTab_positive");
-				Element negativeEle = doc.getElementById("ReviewsTab_negative");
-				
-				if (positiveEle == null) {
-					positive = 0;
-				} else {
-					String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
-							.replace("(", "")
-							.replace(")", "")
-							.replace(",", "");
-					
-					positive = Integer.parseInt(positiveStr);
-
-				}
-				
-				if (negativeEle == null) {
-					negative = 0;
-				} else {
-					String negativeStr = negativeEle.getElementsByClass("user_reviews_count").text()
-							.replace("(", "")
-							.replace(")", "")
-							.replace(",", "");
-					
-					negative = Integer.parseInt(negativeStr);
-				}
-
-				if (positive == 0 && negative == 0) {
-					rating = BigDecimal.valueOf(0);
-				} else {
-					rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
-				}
-				System.out.println(name);
-//				System.out.println("+ " + positive);
-//				System.out.println("- " + negative);
-//				System.out.println(rating + "%");
-				
-				try {
-					pst.setString(1, name);
-					pst.setInt(2, positive);
-					pst.setInt(3, negative);
-					pst.setBigDecimal(4, rating);
-					pst.setInt(5, appid);
-					
-					pst.setInt(6, appid);
-					pst.setString(7, name);
-					pst.setInt(8, positive);
-					pst.setInt(9, negative);
-					pst.setBigDecimal(10, rating);
-					
-					pst.setInt(11, appid);
-
-					pst.executeUpdate();
-					
-					con.commit();
-				} catch (SQLException e) {
-					System.out.println("Error with appid: " + appid);
-					e.printStackTrace();
-					try {
-						con.rollback();
-					} catch (SQLException e1) {
-						e1.printStackTrace();
-					}
-				}
-
-				
-			} else {
-//				System.out.println("appid: "+ game.appid);
-//				System.out.println("No info found.");
-			}
+			} 
 			
 //			System.out.println("---------------------------------------");
 		}
