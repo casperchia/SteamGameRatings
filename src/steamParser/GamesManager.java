@@ -26,7 +26,7 @@ import com.google.gson.Gson;
  */
 public class GamesManager {
 	
-	private static final int NUM_OF_THREADS = 32;
+	private static final int NUM_OF_THREADS = 8;
 	public static int i;
 	
 	
@@ -54,12 +54,12 @@ public class GamesManager {
 				e1.printStackTrace();
 				
 				// try again
-				try {
-					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(20*1000).get();
-				} catch (IOException e) {
-					System.out.println("Error connecting to appid: " + appid);
-					e.printStackTrace();
-				}
+//				try {
+//					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(20*1000).get();
+//				} catch (IOException e) {
+//					System.out.println("Error connecting to appid: " + appid);
+//					e.printStackTrace();
+//				}
 
 			}
 			
@@ -70,24 +70,29 @@ public class GamesManager {
 			
 			// If name cannot be found, it means there is no app with that appid anymore, or the webpage requires age input.
 			if (!(nameEle.size() > 0)) {
+				//At this point, doc may still be null
 				
-				// Auto fill age form with timeout of 10 seconds.
-				try {
-					doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + appid)
-					        .data("ageYear", "1990")
-					        .data("ageMonth", "January")
-					        .data("ageDay", "1")
-					        .timeout(20*1000)
-					        .post();
-				} catch (IOException e) {
-					System.out.println("Error connecting to appid: " + appid);
-					e.printStackTrace();
+				if(doc.getElementsByClass("agecheck").size() > 0){
+					
+					// Auto fill age form with timeout of 10 seconds.
+					try {
+						doc = Jsoup.connect("http://store.steampowered.com/agecheck/app/" + appid)
+						        .data("ageYear", "1990")
+						        .data("ageMonth", "January")
+						        .data("ageDay", "1")
+						        .timeout(20*1000)
+						        .post();
+					} catch (IOException e) {
+						System.out.println("Error connecting to appid: " + appid);
+						e.printStackTrace();
+					}
+				} else {
+					// Do nothing
 				}
+
 			}
 							
 			nameEle = doc.getElementsByClass("apphub_AppName");
-			Element positiveEle = doc.getElementById("ReviewsTab_positive");
-			Element negativeEle = doc.getElementById("ReviewsTab_negative");
 			
 			if (nameEle.size() > 0) {
 				String name = nameEle.text();
@@ -95,24 +100,41 @@ public class GamesManager {
 				int negative;
 				BigDecimal rating;
 				
-//				System.out.println(i++ + ")");
-//				System.out.println("appid: "+ appid);
+				System.out.println(i++ + ")");
+				System.out.println("appid: "+ appid);
 				
-				String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
-						.replace("(", "")
-						.replace(")", "")
-						.replace(",", "");
+				Element positiveEle = doc.getElementById("ReviewsTab_positive");
+				Element negativeEle = doc.getElementById("ReviewsTab_negative");
 				
-				String negativeStr = negativeEle.getElementsByClass("user_reviews_count").text()
-						.replace("(", "")
-						.replace(")", "")
-						.replace(",", "");
+				if (positiveEle == null) {
+					positive = 0;
+				} else {
+					String positiveStr = positiveEle.getElementsByClass("user_reviews_count").text()
+							.replace("(", "")
+							.replace(")", "")
+							.replace(",", "");
+					
+					positive = Integer.parseInt(positiveStr);
+
+				}
 				
-				positive = Integer.parseInt(positiveStr);
-				negative = Integer.parseInt(negativeStr);
-				rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
-				
-//				System.out.println(name);
+				if (negativeEle == null) {
+					negative = 0;
+				} else {
+					String negativeStr = negativeEle.getElementsByClass("user_reviews_count").text()
+							.replace("(", "")
+							.replace(")", "")
+							.replace(",", "");
+					
+					negative = Integer.parseInt(negativeStr);
+				}
+
+				if (positive == 0 && negative == 0) {
+					rating = BigDecimal.valueOf(0);
+				} else {
+					rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
+				}
+				System.out.println(name);
 //				System.out.println("+ " + positive);
 //				System.out.println("- " + negative);
 //				System.out.println(rating + "%");
@@ -222,6 +244,62 @@ public class GamesManager {
 		}
 		
 
+	}
+
+	public static void loadAllGames() throws SQLException {
+		ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
+		java.sql.Connection con = null;
+		PreparedStatement pst = null;
+		
+		String url = "jdbc:postgresql://localhost/steamdb";
+		String user = "casper";
+		String password = "qwer";
+		
+		try {
+			con = DriverManager.getConnection(url, user, password);
+			con.setAutoCommit(false);
+			
+			String sql = "UPDATE games SET name=?, positive=?, negative=?, rating=? WHERE appid=?;"
+					+ "INSERT INTO games (appid, name, positive, negative, rating)"
+					+ "SELECT ?, ?, ?, ?, ?"
+					+ "WHERE NOT EXISTS (SELECT 1 FROM games WHERE appid=?)";
+			pst = con.prepareStatement(sql);
+			
+			
+			i = 1;
+			System.out.println("Starting threads...");
+			long startTime = System.currentTimeMillis();
+			for (int appid = 0; appid < 350000; appid++) {
+//			for(int x = 0; x < 1000; x++){
+//				int appid = 7796;
+				Runnable worker = new MyRunnable(appid, con, pst);
+				executor.execute(worker);
+			}
+			executor.shutdown();
+			while (!executor.isTerminated()) {
+				
+			}
+			long finishTime = System.currentTimeMillis();
+			System.out.println("Finished all threads");
+			System.out.println("That took: " + (finishTime - startTime) + " ms.");
+			System.out.println("-----------------------");
+			
+		} catch (SQLException e) {
+			System.out.println("Connection Failed! Check output console");
+			con.rollback();
+			e.printStackTrace();
+			return;		
+			
+		} finally {
+
+			if (pst != null) {
+				pst.close();
+			}
+            if (con != null) {
+                con.close();
+            }
+
+		}
 	}
 	
 }
