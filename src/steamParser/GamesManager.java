@@ -26,7 +26,7 @@ import com.google.gson.Gson;
  */
 public class GamesManager {
 	
-	private static final int NUM_OF_THREADS = 16;
+	private static final int NUM_OF_THREADS = 32;
 	public static int i;
 	
 	
@@ -48,21 +48,25 @@ public class GamesManager {
 		public void run() {
 			Document doc = null;
 			int retryCount = 0;
-			while (doc == null && retryCount < 3) {
+			while (doc == null && retryCount < Constants.MAX_RETRIES) {
 				if (retryCount > 0) {
-					System.out.println("Trying to reconnect " + "(" + retryCount + ")" + "to appid: " + appid);
+					System.out.println("Reconnecting " + "(" + retryCount + ") " + "to appid: " + appid);
 				}
 				try {
-					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(10*1000).get();
+					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(5*1000).get();
 				} catch (IOException e1) {
+					System.out.println("---------------------------------");
 					System.out.println("Error connecting to appid: " + appid);
 					e1.printStackTrace();
 				}
 				retryCount++;
 			}
 			
-			if (retryCount == 3){
-				System.out.println("Unable to connect to appid: " + appid);
+//			if (retryCount != 1){
+//				System.out.println("RETRY COUNT = " + retryCount);				
+//			}
+			if (retryCount == Constants.MAX_RETRIES){
+				System.out.println("Reached max retries. Unable to connect to appid: " + appid);
 			}
 			
 			Elements nameEle = new Elements();
@@ -84,7 +88,7 @@ public class GamesManager {
 							        .timeout(10*1000)
 							        .post();
 						} catch (IOException e) {
-							System.out.println("Error connecting to appid: " + appid);
+							System.out.println("Error connecting to AGECHECK of appid: " + appid);
 							e.printStackTrace();
 						}
 					} else {
@@ -174,7 +178,9 @@ public class GamesManager {
 //					System.out.println("No info found.");
 				}
 
-			} 
+			} else {
+				System.out.println("appid: " + appid + " returns NULL");
+			}
 			
 //			System.out.println("---------------------------------------");
 		}
