@@ -5,6 +5,6 @@ CREATE TABLE IF NOT EXISTS games (
 	name TEXT NOT NULL,
 	positive INT,
 	negative INT,
---	4 digits with 2 decimal points
-	rating NUMERIC(4, 2)
+--	5 digits with 2 decimal points
+	rating NUMERIC(5, 2)
 );
