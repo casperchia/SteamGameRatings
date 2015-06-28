@@ -5,10 +5,10 @@ import java.math.BigDecimal;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,13 +26,12 @@ import com.google.gson.Gson;
  */
 public class GamesManager {
 	
-	private static final int NUM_OF_THREADS = 32;
+	private static final int NUM_OF_THREADS = 24;
 	public static int i;
 	
 	
 	public static class MyRunnable implements Runnable {
 		
-//		private Lock lock;
 		private java.sql.Connection con;
 		private PreparedStatement pst;
 		private int appid;
@@ -40,7 +39,6 @@ public class GamesManager {
 		MyRunnable(int appid,java.sql.Connection con, PreparedStatement pst) {
 			this.con = con;
 			this.pst = pst;
-//			this.lock = new ReentrantLock();
 			this.appid = appid;
 		}
 		
@@ -49,15 +47,15 @@ public class GamesManager {
 			Document doc = null;
 			int retryCount = 0;
 			while (doc == null && retryCount < Constants.MAX_RETRIES) {
-				if (retryCount > 0) {
-					System.out.println("Reconnecting " + "(" + retryCount + ") " + "to appid: " + appid);
-				}
+//				if (retryCount > 0) {
+//					System.out.println("Reconnecting " + "(" + retryCount + ") " + "to appid: " + appid);
+//				}
 				try {
 					doc = Jsoup.connect(Constants.STEAM_APP_URL + appid).timeout(5*1000).get();
 				} catch (IOException e1) {
-					System.out.println("---------------------------------");
-					System.out.println("Error connecting to appid: " + appid);
-					e1.printStackTrace();
+//					System.out.println("---------------------------------");
+//					System.out.println("Error connecting to appid: " + appid);
+//					e1.printStackTrace();
 				}
 				retryCount++;
 			}
@@ -91,7 +89,7 @@ public class GamesManager {
 								        .post();
 							} catch (IOException e) {
 								System.out.println("Error connecting to AGECHECK of appid: " + appid);
-								e.printStackTrace();
+//								e.printStackTrace();
 							}
 							retryCount++;
 						}
@@ -107,8 +105,8 @@ public class GamesManager {
 						int negative;
 						BigDecimal rating;
 						
-						System.out.println(i++ + ")");
-						System.out.println("appid: "+ appid);
+//						System.out.println(i++ + ")");
+//						System.out.println("appid: "+ appid);
 						
 						Element positiveEle = doc.getElementById("ReviewsTab_positive");
 						Element negativeEle = doc.getElementById("ReviewsTab_negative");
@@ -141,7 +139,7 @@ public class GamesManager {
 						} else {
 							rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
 						}
-						System.out.println(name);
+//						System.out.println(name);
 //						System.out.println("+ " + positive);
 //						System.out.println("- " + negative);
 //						System.out.println(rating + "%");
@@ -176,7 +174,7 @@ public class GamesManager {
 
 						
 					} else {
-//						System.out.println("appid: "+ game.appid);
+//						System.out.println("appid: "+ appid);
 //						System.out.println("No info found.");
 					}
 				}
@@ -197,11 +195,7 @@ public class GamesManager {
 	 */
 	public static void loadGames(String steamid) throws Exception {
 		ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
-		String json = SteamIdManager.readUrl("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + Constants.STEAM_KEY + "&steamid=" + steamid + "&format=json");
-		Gson gson = new Gson();
-		Constants.Page page = gson.fromJson(json, Constants.Page.class);
-		
-		
+				
 		java.sql.Connection con = null;
 		PreparedStatement pst = null;
 		
@@ -219,15 +213,14 @@ public class GamesManager {
 					+ "WHERE NOT EXISTS (SELECT 1 FROM games WHERE appid=?)";
 			pst = con.prepareStatement(sql);
 			
-			
-//			int i = 1;	
 			i = 1;
 			System.out.println("Starting threads...");
+			
+			List<Integer> appidList = getAppidList(steamid);
 			long startTime = System.currentTimeMillis();
-			for (Game game : page.response.games) {
-				Runnable worker = new MyRunnable(Integer.parseInt(game.appid), con, pst);
+			for (int appid : appidList) {	
+				Runnable worker = new MyRunnable(appid, con, pst);
 				executor.execute(worker);
-
 			}
 			executor.shutdown();
 			while (!executor.isTerminated()) {
@@ -258,6 +251,11 @@ public class GamesManager {
 
 	}
 
+	
+	/**
+	 * Scrapes all steam pages for appid: 0-400k and insert/updates into database.
+	 * @throws SQLException
+	 */
 	public static void loadAllGames() throws SQLException {
 		ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
 		java.sql.Connection con = null;
@@ -281,7 +279,7 @@ public class GamesManager {
 			i = 1;
 			System.out.println("Starting threads...");
 			long startTime = System.currentTimeMillis();
-			for (int appid = 0; appid < 350000; appid++) {
+			for (int appid = 0; appid < 400000; appid++) {
 //			for(int x = 0; x < 1000; x++){
 //				int appid = 7796;
 				Runnable worker = new MyRunnable(appid, con, pst);
@@ -314,4 +312,24 @@ public class GamesManager {
 		}
 	}
 	
+	
+	/**
+	 * Get list of appids from given steam ID.
+	 * @param steamid
+	 * @return List of appids
+	 * @throws Exception
+	 */
+	public static List<Integer> getAppidList(String steamid) throws Exception {
+		String json = SteamIdManager.readUrl("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + Constants.STEAM_KEY + "&steamid=" + steamid + "&format=json");
+		Gson gson = new Gson();
+		Constants.Page page = gson.fromJson(json, Constants.Page.class);
+		List<Integer> appids = new ArrayList<Integer>();
+
+		for (Game game : page.response.games) {
+			appids.add(Integer.parseInt(game.appid));
+		}
+		
+		return appids;
+		
+	}
 }
