@@ -5,15 +5,18 @@ import org.junit.Test;
 public class GamesManagerTest {
 
 	@Test
-	public void testPrintGames() throws Exception {
-		// mozface id
-//		GamesManager.printGames("76561198024048520");
-		
+	public void testLoadGames() throws Exception {
+//		 mozface id
+//		for (int i = 0; i < 20; i++){
+			GamesManager.loadGames("76561198024048520");
+//		}
 		// eunicell id
-		GamesManager.printGames("76561198061965614");
+//		GamesManager.loadGames("76561198061965614");
 		
 		// valkyriebiscuit		
-//		GamesManager.printGames((SteamIdManager.getSteamId("ValkyrieBiscuit")));
+//		GamesManager.loadGames((SteamIdManager.getSteamId("ValkyrieBiscuit")));
+
+//		GamesManager.loadAllGames();
 	}
  
 }
