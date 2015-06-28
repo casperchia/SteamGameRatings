@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class Constants {
 	public static final String STEAM_KEY = "5BFDD3211928F0C392EFBC80FA343E69";
 	public static final String STEAM_APP_URL = "http://store.steampowered.com/app/";
+	public static final int MAX_RETRIES = 5;
 
 	static class Page {
 		Response response;
