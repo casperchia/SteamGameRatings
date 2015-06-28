@@ -319,17 +319,46 @@ public class GamesManager {
 	 * @return List of appids
 	 * @throws Exception
 	 */
-	public static List<Integer> getAppidList(String steamid) throws Exception {
-		String json = SteamIdManager.readUrl("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + Constants.STEAM_KEY + "&steamid=" + steamid + "&format=json");
-		Gson gson = new Gson();
-		Constants.Page page = gson.fromJson(json, Constants.Page.class);
-		List<Integer> appids = new ArrayList<Integer>();
-
-		for (Game game : page.response.games) {
-			appids.add(Integer.parseInt(game.appid));
+	public static List<Integer> getAppidList(String steamid) {
+		String json = null;
+		try {
+			json = SteamIdManager.readUrl("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + Constants.STEAM_KEY + "&steamid=" + steamid + "&format=json");
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		
-		return appids;
-		
+		if (json == null) {
+			return null;
+		} else {
+			Gson gson = new Gson();
+			Constants.Page page = gson.fromJson(json, Constants.Page.class);
+			List<Integer> appids = new ArrayList<Integer>();
+	
+			for (Game game : page.response.games) {
+				appids.add(Integer.parseInt(game.appid));
+			}
+			
+			return appids;
+		}
 	}
+	
+	public static List<GameBean> getGames(String steamid) {
+		List<GameBean> games = new ArrayList<GameBean>();
+		List<Integer> appidList = getAppidList(steamid);
+		
+		return games;
+	}
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
