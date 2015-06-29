@@ -335,11 +335,13 @@ public class GamesManager {
 			Gson gson = new Gson();
 			Constants.Page page = gson.fromJson(json, Constants.Page.class);
 			List<Integer> appids = new ArrayList<Integer>();
-	
-			for (Game game : page.response.games) {
-				appids.add(Integer.parseInt(game.appid));
+			if (page.response.games != null) {
+				for (Game game : page.response.games) {
+					appids.add(Integer.parseInt(game.appid));
+				}
+			} else {
+				return null;
 			}
-			
 			return appids;
 		}
 	}
