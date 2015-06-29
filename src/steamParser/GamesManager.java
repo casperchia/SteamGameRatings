@@ -1,12 +1,15 @@
 package steamParser;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,6 +21,7 @@ import org.jsoup.select.Elements;
 import steamParser.Constants.Game;
 
 import com.google.gson.Gson;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 
 /**
@@ -78,6 +82,7 @@ public class GamesManager {
 					if(doc.getElementsByClass("agecheck").size() > 0){
 						doc = null;
 						
+						retryCount = 0;
 						// Auto fill age form with timeout of 5 seconds.
 						while (doc == null && retryCount < Constants.MAX_RETRIES) {
 							try {
@@ -93,6 +98,11 @@ public class GamesManager {
 							}
 							retryCount++;
 						}
+						
+						if (retryCount == Constants.MAX_RETRIES){
+							System.out.println("Reached max AGECHECK retries. Unable to connect to appid: " + appid);
+						}
+
 					}
 				}
 				
@@ -195,16 +205,12 @@ public class GamesManager {
 	 */
 	public static void loadGames(String steamid) throws Exception {
 		ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
-				
-		java.sql.Connection con = null;
+		
+		Connection con = null;
 		PreparedStatement pst = null;
 		
-		String url = "jdbc:postgresql://localhost/steamdb";
-		String user = "casper";
-		String password = "qwer";
-		
 		try {
-			con = DriverManager.getConnection(url, user, password);
+			con = getConnection();
 			con.setAutoCommit(false);
 			
 			String sql = "UPDATE games SET name=?, positive=?, negative=?, rating=? WHERE appid=?;"
@@ -258,15 +264,11 @@ public class GamesManager {
 	 */
 	public static void loadAllGames() throws SQLException {
 		ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
-		java.sql.Connection con = null;
+		Connection con = null;
 		PreparedStatement pst = null;
 		
-		String url = "jdbc:postgresql://localhost/steamdb";
-		String user = "casper";
-		String password = "qwer";
-		
 		try {
-			con = DriverManager.getConnection(url, user, password);
+			con = getConnection();
 			con.setAutoCommit(false);
 			
 			String sql = "UPDATE games SET name=?, positive=?, negative=?, rating=? WHERE appid=?;"
@@ -346,7 +348,39 @@ public class GamesManager {
 		List<GameBean> games = new ArrayList<GameBean>();
 		List<Integer> appidList = getAppidList(steamid);
 		
+		PreparedStatement pst = null;
+		
+//		Connection con = getConnection();
+//		if (con != null) {
+		
+			
+//		}
+		
 		return games;
+	}
+	
+	public static Connection getConnection() throws SQLException {
+		
+		Properties props = new Properties();
+		FileInputStream fis = null;
+		
+		try {
+			fis = new FileInputStream("db.properties");
+			props.load(fis);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Unable to load db.properties file.");
+			return null;
+		}
+		
+		String url = props.getProperty("POSTGRES_DB_URL");
+		String user = props.getProperty("POSTGRES_DB_USERNAME");
+		String password = props.getProperty("POSTGRES_DB_PASSWORD");
+
+		Connection con = null;
+		con = DriverManager.getConnection(url, user, password);
+		
+		return con;		
 	}
 	
 }
