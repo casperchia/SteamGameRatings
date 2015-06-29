@@ -233,6 +233,7 @@ public class GamesManager {
 			
 		} catch (SQLException e) {
 			System.out.println("Connection Failed! Check output console");
+			con.rollback();
 			e.printStackTrace();
 			return;		
 			
@@ -295,6 +296,7 @@ public class GamesManager {
 			
 		} catch (SQLException e) {
 			System.out.println("Connection Failed! Check output console");
+			con.rollback();
 			e.printStackTrace();
 			return;		
 			
