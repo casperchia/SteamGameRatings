@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -348,13 +349,51 @@ public class GamesManager {
 		List<GameBean> games = new ArrayList<GameBean>();
 		List<Integer> appidList = getAppidList(steamid);
 		
+		Connection con = null;
 		PreparedStatement pst = null;
+		ResultSet rs = null;
 		
-//		Connection con = getConnection();
-//		if (con != null) {
 		
+		try {
+			con = getConnection();
+			pst = con.prepareStatement("SELECT * FROM games where appid=?");
+
+//			int x = 1;
+			for (int id : appidList) {
+				pst.setInt(1, id);
+				rs = pst.executeQuery();
+				
+				while (rs.next()) {
+					GameBean game = new GameBean();
+					game.setAppid(rs.getInt(1));
+					game.setName(rs.getString(2));
+					game.setPositive(rs.getInt(3));
+					game.setNegative(rs.getInt(4));
+					game.setRating(rs.getDouble(5));
+					games.add(game);
+					
+//					System.out.println(x++ + ")");
+//					System.out.println(game.getAppid());
+//					System.out.println(game.getName());
+//					System.out.println(game.getPositive() + "/" + game.getNegative());
+//					System.out.println(game.getRating() + "%");
+//					System.out.println("-------------------------------");
+				}
+			}
 			
-//		}
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+			
+		} finally {
+			if (pst != null) {
+				try { pst.close(); } catch (SQLException e) { e.printStackTrace(); }
+			}
+            if (con != null) {
+				try { con.close(); } catch (SQLException e) { e.printStackTrace(); }
+            }
+		}
 		
 		return games;
 	}
