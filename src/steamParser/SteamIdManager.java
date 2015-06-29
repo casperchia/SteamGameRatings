@@ -43,8 +43,15 @@ public class SteamIdManager {
 	 * @return Steam ID. Null if no such user found.
 	 * @throws Exception
 	 */
-	public static String getSteamId(String username) throws Exception{
-		String json = readUrl("http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=" + Constants.STEAM_KEY + "&vanityurl=" + username);
+	public static String getSteamId(String username) {
+		String json = null;
+		try {
+			json = readUrl("http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=" + Constants.STEAM_KEY + "&vanityurl=" + username);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Unable to getSteamId for " + username);
+			return null;
+		}
 		Gson gson = new Gson();
 		Constants.Page page = gson.fromJson(json, Constants.Page.class);
 		return page.response.steamid;
