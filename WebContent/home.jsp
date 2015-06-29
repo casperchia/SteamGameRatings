@@ -10,10 +10,16 @@
 
 	Hello World!
 	<form action="Control" method="GET">
-	
 		<input type="hidden" name="action" value="login">
 		<input class="steamLoginBtn" type="submit" value="">
 	</form>
+	
+	<form action="Control" method="GET" id="searchForm">
+		<input type="text" name="username" maxlength="50"/>
+		<input type="hidden" name="action" value="gamesRequest"/>
+		<input type="submit" value="Enter"/>
+	</form>
+	
 
 </body>
 </html>
