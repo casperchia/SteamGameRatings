@@ -1,6 +1,7 @@
 
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -8,6 +9,10 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import steamParser.GameBean;
+import steamParser.GamesManager;
+import steamParser.SteamIdManager;
 
 /**
  * Servlet implementation class Control
@@ -31,10 +36,24 @@ public class Control extends HttpServlet {
 		
 		// Set default page.
 		String nextPage = "home.jsp";
-		
 		String action = request.getParameter("action");
-		if (action.equals("login")) {
-			
+
+		if (action == null){
+			action = "home";
+		}
+
+		if (action.equals("gamesRequest")) {
+			String username = request.getParameter("username");
+			String steamid = SteamIdManager.getSteamId(username);
+			System.out.println(steamid);
+			if (steamid == null) {
+				// Do something here
+				// Print that user does not have vanity id, must use steamid instead.
+			} else {
+				List<GameBean> games = GamesManager.getGames(steamid);
+				request.getSession().setAttribute("games", games);				
+			}
+			nextPage = "games.jsp";
 		}
 		
 		// Dispatch control.
