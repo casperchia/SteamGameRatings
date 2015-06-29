@@ -356,30 +356,31 @@ public class GamesManager {
 		try {
 			con = getConnection();
 			pst = con.prepareStatement("SELECT * FROM games where appid=?");
-
-//			int x = 1;
-			for (int id : appidList) {
-				pst.setInt(1, id);
-				rs = pst.executeQuery();
-				
-				while (rs.next()) {
-					GameBean game = new GameBean();
-					game.setAppid(rs.getInt(1));
-					game.setName(rs.getString(2));
-					game.setPositive(rs.getInt(3));
-					game.setNegative(rs.getInt(4));
-					game.setRating(rs.getDouble(5));
-					games.add(game);
+			
+			if (appidList != null) {
+	//			int x = 1;
+				for (int id : appidList) {
+					pst.setInt(1, id);
+					rs = pst.executeQuery();
 					
-//					System.out.println(x++ + ")");
-//					System.out.println(game.getAppid());
-//					System.out.println(game.getName());
-//					System.out.println(game.getPositive() + "/" + game.getNegative());
-//					System.out.println(game.getRating() + "%");
-//					System.out.println("-------------------------------");
+					while (rs.next()) {
+						GameBean game = new GameBean();
+						game.setAppid(rs.getInt(1));
+						game.setName(rs.getString(2));
+						game.setPositive(rs.getInt(3));
+						game.setNegative(rs.getInt(4));
+						game.setRating(rs.getDouble(5));
+						games.add(game);
+						
+	//					System.out.println(x++ + ")");
+	//					System.out.println(game.getAppid());
+	//					System.out.println(game.getName());
+	//					System.out.println(game.getPositive() + "/" + game.getNegative());
+	//					System.out.println(game.getRating() + "%");
+	//					System.out.println("-------------------------------");
+					}
 				}
 			}
-			
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -403,14 +404,22 @@ public class GamesManager {
 		FileInputStream fis = null;
 		
 		try {
-			fis = new FileInputStream("db.properties");
-			props.load(fis);
+//			fis = new FileInputStream("db.properties");
+//			props.load(getServletContext().getResourceAsStream("/WEB-INF/db.properties"));
+			props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties"));
+
+//			props.load(fis);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Unable to load db.properties file.");
 			return null;
 		}
 		
+		try {
+			Class.forName("org.postgresql.Driver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 		String url = props.getProperty("POSTGRES_DB_URL");
 		String user = props.getProperty("POSTGRES_DB_USERNAME");
 		String password = props.getProperty("POSTGRES_DB_PASSWORD");
