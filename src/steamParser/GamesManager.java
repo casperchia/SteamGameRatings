@@ -31,7 +31,7 @@ import com.google.gson.Gson;
  */
 public class GamesManager {
 	
-	private static final int NUM_OF_THREADS = 24;
+	private static final int NUM_OF_THREADS = 40;
 	public static int i;
 	private static Lock lock = new ReentrantLock();
 	
@@ -150,13 +150,13 @@ public class GamesManager {
 						}
 						
 						lock.lock();
-						System.out.println(i++ + ")");
-						System.out.println("appid: "+ appid);
-						System.out.println(name);
-						System.out.println("+ " + positive);
-						System.out.println("- " + negative);
-						System.out.println(rating + "%");
-						System.out.println("---------------------------------------");
+//						System.out.println(i++ + ")");
+//						System.out.println("appid: "+ appid);
+//						System.out.println(name);
+//						System.out.println("+ " + positive);
+//						System.out.println("- " + negative);
+//						System.out.println(rating + "%");
+//						System.out.println("---------------------------------------");
 						
 						try {
 							pst.setString(1, name);
@@ -259,7 +259,6 @@ public class GamesManager {
             }
 
 		}
-		
 
 	}
 
