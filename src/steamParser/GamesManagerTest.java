@@ -88,5 +88,40 @@ public class GamesManagerTest {
             }
 		}
 	}
-	
+
+	@Test
+	public void testGetDbList() {
+		List<Integer> appids = new ArrayList<Integer>();
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		int totalGames;
+		int listSize;
+		
+		try {
+			con = GamesManager.getConnection();
+			pst = con.prepareStatement("SELECT count(*) FROM games");
+			rs = pst.executeQuery();
+			rs.next();
+			totalGames = rs.getInt(1);
+			listSize = GamesManager.getDbList().size();
+			System.out.println("listSize: " + listSize);
+			System.out.println("totalGames: " + totalGames);
+			assertEquals(listSize, totalGames);
+			System.out.println("getDbList() test successful!");
+
+		} catch (SQLException e) {
+			System.out.println("Connection Failed! Check output console");
+			e.printStackTrace();
+		} finally {
+			if (pst != null) {
+				try { pst.close(); } catch (SQLException e) {e.printStackTrace();}
+			}
+            if (con != null) {
+				try { con.close(); } catch (SQLException e) {e.printStackTrace();}
+            }
+		}
+		
+		
+	}
 }
