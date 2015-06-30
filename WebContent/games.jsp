@@ -8,19 +8,46 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>Steam Game Ratings</title>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
+  
+<!-- jQuery -->
+<script type="text/javascript" charset="utf8" src="//code.jquery.com/jquery-1.10.2.min.js"></script>
+  
+<!-- DataTables -->
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.js"></script>
+
+<script>
+$(document).ready( function () {
+    $('#gamesTable').DataTable();
+} );
+</script>
+
 </head>
 <body>
 	List of games here:
-	<table>
-		<c:forEach var="game" items="${games}">
+	<table id="gamesTable">
+		<thead>
 			<tr>
-				<td>${game.appid}</td>
-				<td>${game.name}</td>
-				<td>${game.positive}</td>
-				<td>${game.negative}</td>
-				<td>${game.rating}</td>
+				<td>App ID</td>
+				<td>Name</td>
+				<td>Negative (-)</td>
+				<td>Positive (+)</td>
+				<td>Rating (%)</td>
 			</tr>
-		</c:forEach>
+		</thead>
+		<tbody>
+			<c:forEach var="game" items="${games}">
+				<tr>
+					<td>${game.appid}</td>
+					<td>${game.name}</td>
+					<td>${game.positive}</td>
+					<td>${game.negative}</td>
+					<td>${game.rating}</td>
+				</tr>
+			</c:forEach>
+		</tbody>
 	</table>
 </body>
 </html>
