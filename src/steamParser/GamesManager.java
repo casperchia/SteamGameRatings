@@ -1,5 +1,7 @@
 package steamParser;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -494,6 +496,40 @@ public class GamesManager {
 		con = DriverManager.getConnection(url, user, password);
 		
 		return con;		
+	}
+	
+	/**
+	 * Get list of appids of all games in DB.
+	 * @return List of appids (Integer).
+	 */
+	public static List<Integer> getDbList() {
+		List<Integer> appids = new ArrayList<Integer>();
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		
+		try {
+			con = GamesManager.getConnection();
+			pst = con.prepareStatement("SELECT appid FROM games ORDER BY appid");
+			rs = pst.executeQuery();
+
+			while (rs.next()) {
+				appids.add(rs.getInt(1));
+			}
+						
+		} catch (SQLException e) {
+			System.out.println("Connection Failed! Check output console");
+			e.printStackTrace();
+		} finally {
+			if (pst != null) {
+				try { pst.close(); } catch (SQLException e) {e.printStackTrace();}
+			}
+            if (con != null) {
+				try { con.close(); } catch (SQLException e) {e.printStackTrace();}
+            }
+		}
+		
+		return appids;
 	}
 	
 }
