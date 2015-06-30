@@ -1,7 +1,5 @@
 package steamParser;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -36,7 +34,6 @@ public class GamesManager {
 	private static final int NUM_OF_THREADS = 40;
 	public static int i;
 	private static Lock lock = new ReentrantLock();
-	
 	
 	public static class MyRunnable implements Runnable {
 		
@@ -152,13 +149,13 @@ public class GamesManager {
 						}
 						
 						lock.lock();
-//						System.out.println(i++ + ")");
-//						System.out.println("appid: "+ appid);
-//						System.out.println(name);
+						System.out.println(i++ + ")");
+						System.out.println("appid: "+ appid);
+						System.out.println(name);
 //						System.out.println("+ " + positive);
 //						System.out.println("- " + negative);
 //						System.out.println(rating + "%");
-//						System.out.println("---------------------------------------");
+						System.out.println("---------------------------------------");
 						
 						try {
 							pst.setString(1, name);
@@ -264,7 +261,6 @@ public class GamesManager {
 
 	}
 
-	
 	/**
 	 * Scrapes all steam pages for appid: 0-400k and insert/updates into database.
 	 * @throws SQLException
@@ -320,7 +316,6 @@ public class GamesManager {
 
 		}
 	}
-	
 	
 	/**
 	 * Scrape and insert all games in appids list into db.
@@ -409,48 +404,44 @@ public class GamesManager {
 	}
 	
 	/**
-	 * Gets list of games in GameBeans for given steamid, and also updates db with any missing games the user has (and the db doesn't).
+	 * Gets list of games in GameBeans for given steamid.
 	 * @param steamid
 	 * @return List<GameBean> list of games.
 	 */
 	public static List<GameBean> getGames(String steamid) {
 		List<GameBean> games = new ArrayList<GameBean>();
 		List<Integer> appidList = getAppidList(steamid);
-		List<Integer> missingAppids = getAppidList(steamid);
-		List<Integer> dbList = getDbList();
-
-		missingAppids.removeAll(dbList);
-		loadGamesFromList(missingAppids);
-				
+		
 		Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
 		
 		try {
-			con = getConnection();
-			pst = con.prepareStatement("SELECT * FROM games where appid=?");
-			
 			if (appidList != null) {
-	//			int x = 1;
-				for (int id : appidList) {
-					pst.setInt(1, id);
-					rs = pst.executeQuery();
-					
-					while (rs.next()) {
-						GameBean game = new GameBean();
-						game.setAppid(rs.getInt(1));
-						game.setName(rs.getString(2));
-						game.setPositive(rs.getInt(3));
-						game.setNegative(rs.getInt(4));
-						game.setRating(rs.getDouble(5));
-						games.add(game);
+				if (appidList.size() > 0) {
+					con = getConnection();
+					pst = con.prepareStatement("SELECT * FROM games where appid=?");
+		//			int x = 1;
+					for (int id : appidList) {
+						pst.setInt(1, id);
+						rs = pst.executeQuery();
 						
-	//					System.out.println(x++ + ")");
-	//					System.out.println(game.getAppid());
-	//					System.out.println(game.getName());
-	//					System.out.println(game.getPositive() + "/" + game.getNegative());
-	//					System.out.println(game.getRating() + "%");
-	//					System.out.println("-------------------------------");
+						while (rs.next()) {
+							GameBean game = new GameBean();
+							game.setAppid(rs.getInt(1));
+							game.setName(rs.getString(2));
+							game.setPositive(rs.getInt(3));
+							game.setNegative(rs.getInt(4));
+							game.setRating(rs.getDouble(5));
+							games.add(game);
+							
+		//					System.out.println(x++ + ")");
+		//					System.out.println(game.getAppid());
+		//					System.out.println(game.getName());
+		//					System.out.println(game.getPositive() + "/" + game.getNegative());
+		//					System.out.println(game.getRating() + "%");
+		//					System.out.println("-------------------------------");
+						}
 					}
 				}
 			}
