@@ -1,6 +1,5 @@
 package steamParser;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Connection;
