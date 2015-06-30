@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -31,6 +33,7 @@ public class GamesManager {
 	
 	private static final int NUM_OF_THREADS = 24;
 	public static int i;
+	private static Lock lock = new ReentrantLock();
 	
 	
 	public static class MyRunnable implements Runnable {
@@ -113,10 +116,7 @@ public class GamesManager {
 						int positive;
 						int negative;
 						BigDecimal rating;
-						
-//						System.out.println(i++ + ")");
-//						System.out.println("appid: "+ appid);
-						
+											
 						Element positiveEle = doc.getElementById("ReviewsTab_positive");
 						Element negativeEle = doc.getElementById("ReviewsTab_negative");
 						
@@ -148,10 +148,15 @@ public class GamesManager {
 						} else {
 							rating = BigDecimal.valueOf((positive * 100.0) / (positive + negative));
 						}
-//						System.out.println(name);
-//						System.out.println("+ " + positive);
-//						System.out.println("- " + negative);
-//						System.out.println(rating + "%");
+						
+						lock.lock();
+						System.out.println(i++ + ")");
+						System.out.println("appid: "+ appid);
+						System.out.println(name);
+						System.out.println("+ " + positive);
+						System.out.println("- " + negative);
+						System.out.println(rating + "%");
+						System.out.println("---------------------------------------");
 						
 						try {
 							pst.setString(1, name);
@@ -179,6 +184,8 @@ public class GamesManager {
 							} catch (SQLException e1) {
 								e1.printStackTrace();
 							}
+						} finally {
+							lock.unlock();
 						}
 
 						
@@ -315,6 +322,61 @@ public class GamesManager {
 	
 	
 	/**
+	 * Scrape and insert all games in appids list into db.
+	 * @param appids
+	 * @throws SQLException 
+	 */
+	public static void loadGamesFromList (List<Integer> appids) throws SQLException {
+		ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
+		Connection con = null;
+		PreparedStatement pst = null;
+		
+		try {
+			con = getConnection();
+			con.setAutoCommit(false);
+			
+			String sql = "UPDATE games SET name=?, positive=?, negative=?, rating=? WHERE appid=?;"
+					+ "INSERT INTO games (appid, name, positive, negative, rating)"
+					+ "SELECT ?, ?, ?, ?, ?"
+					+ "WHERE NOT EXISTS (SELECT 1 FROM games WHERE appid=?)";
+			pst = con.prepareStatement(sql);
+			
+			
+			i = 1;
+			System.out.println("Starting threads...");
+			long startTime = System.currentTimeMillis();
+			for (int appid : appids) {
+				Runnable worker = new MyRunnable(appid, con, pst);
+				executor.execute(worker);
+			}
+			executor.shutdown();
+			while (!executor.isTerminated()) {
+				
+			}
+			long finishTime = System.currentTimeMillis();
+			System.out.println("Finished all threads");
+			System.out.println("That took: " + (finishTime - startTime) + " ms.");
+			System.out.println("-----------------------");
+			
+		} catch (SQLException e) {
+			System.out.println("Connection Failed! Check output console");
+			con.rollback();
+			e.printStackTrace();
+			return;		
+			
+		} finally {
+
+			if (pst != null) {
+				pst.close();
+			}
+            if (con != null) {
+                con.close();
+            }
+
+		}
+	}
+	
+	/**
 	 * Get list of appids from given steam ID.
 	 * @param steamid
 	 * @return List of appids
@@ -357,7 +419,6 @@ public class GamesManager {
 		Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
-		
 		
 		try {
 			con = getConnection();
