@@ -346,6 +346,11 @@ public class GamesManager {
 		}
 	}
 	
+	/**
+	 * Gets list of games in GameBeans for given steamid, and also updates db with any missing games the user has (and the db doesn't).
+	 * @param steamid
+	 * @return List<GameBean> list of games.
+	 */
 	public static List<GameBean> getGames(String steamid) {
 		List<GameBean> games = new ArrayList<GameBean>();
 		List<Integer> appidList = getAppidList(steamid);
@@ -403,14 +408,9 @@ public class GamesManager {
 	public static Connection getConnection() throws SQLException {
 		
 		Properties props = new Properties();
-		FileInputStream fis = null;
 		
 		try {
-//			fis = new FileInputStream("db.properties");
-//			props.load(getServletContext().getResourceAsStream("/WEB-INF/db.properties"));
 			props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties"));
-
-//			props.load(fis);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Unable to load db.properties file.");
