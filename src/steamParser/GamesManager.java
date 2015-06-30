@@ -327,7 +327,7 @@ public class GamesManager {
 	 * @param appids
 	 * @throws SQLException 
 	 */
-	public static void loadGamesFromList (List<Integer> appids) throws SQLException {
+	public static void loadGamesFromList (List<Integer> appids) {
 		ExecutorService executor = Executors.newFixedThreadPool(NUM_OF_THREADS);
 		Connection con = null;
 		PreparedStatement pst = null;
@@ -361,29 +361,32 @@ public class GamesManager {
 			
 		} catch (SQLException e) {
 			System.out.println("Connection Failed! Check output console");
-			con.rollback();
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
 			e.printStackTrace();
 			return;		
 			
 		} finally {
-
 			if (pst != null) {
-				pst.close();
+				try { pst.close(); } catch (SQLException e) {e.printStackTrace();}
 			}
             if (con != null) {
-                con.close();
+				try { con.close(); } catch (SQLException e) {e.printStackTrace();}
             }
-
 		}
 	}
 	
 	/**
 	 * Get list of appids from given steam ID.
 	 * @param steamid
-	 * @return List of appids
+	 * @return List of appids. Returns empty list if there are no games. Returns null if user cannot be found.
 	 * @throws Exception
 	 */
 	public static List<Integer> getAppidList(String steamid) {
+		List<Integer> appids = new ArrayList<Integer>();
 		String json = null;
 		try {
 			json = SteamIdManager.readUrl("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" + Constants.STEAM_KEY + "&steamid=" + steamid + "&format=json");
@@ -396,14 +399,11 @@ public class GamesManager {
 		} else {
 			Gson gson = new Gson();
 			Constants.Page page = gson.fromJson(json, Constants.Page.class);
-			List<Integer> appids = new ArrayList<Integer>();
 			if (page.response.games != null) {
 				for (Game game : page.response.games) {
 					appids.add(Integer.parseInt(game.appid));
 				}
-			} else {
-				return null;
-			}
+			} 
 			return appids;
 		}
 	}
@@ -416,7 +416,12 @@ public class GamesManager {
 	public static List<GameBean> getGames(String steamid) {
 		List<GameBean> games = new ArrayList<GameBean>();
 		List<Integer> appidList = getAppidList(steamid);
-		
+		List<Integer> missingAppids = getAppidList(steamid);
+		List<Integer> dbList = getDbList();
+
+		missingAppids.removeAll(dbList);
+		loadGamesFromList(missingAppids);
+				
 		Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
