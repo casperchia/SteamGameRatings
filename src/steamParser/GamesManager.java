@@ -404,6 +404,11 @@ public class GamesManager {
 		return games;
 	}
 	
+	/**
+	 * Creates a new connection and returns it.
+	 * @return new connection
+	 * @throws SQLException
+	 */
 	public static Connection getConnection() throws SQLException {
 		
 		Properties props = new Properties();
