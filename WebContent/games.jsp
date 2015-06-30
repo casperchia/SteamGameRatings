@@ -32,8 +32,8 @@ $(document).ready( function () {
 			<tr>
 				<td>App ID</td>
 				<td>Name</td>
-				<td>Negative (-)</td>
 				<td>Positive (+)</td>
+				<td>Negative (-)</td>
 				<td>Rating (%)</td>
 			</tr>
 		</thead>
